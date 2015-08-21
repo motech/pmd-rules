@@ -1,23 +1,23 @@
-import net.sourceforge.pmd.ast.ASTCompilationUnit;
-import net.sourceforge.pmd.ast.Comment;
 import net.sourceforge.pmd.PropertyDescriptor;
-import net.sourceforge.pmd.properties.DoubleProperty;
-import net.sourceforge.pmd.properties.BooleanProperty;
-import net.sourceforge.pmd.properties.StringProperty;
-import net.sourceforge.pmd.AbstractJavaRule;
-import java.util.regex.Pattern;
+import net.sourceforge.pmd.lang.java.ast.ASTCompilationUnit;
+import net.sourceforge.pmd.lang.java.ast.Comment;
+import net.sourceforge.pmd.lang.java.rule.AbstractJavaRule;
+import net.sourceforge.pmd.lang.rule.properties.BooleanProperty;
+import net.sourceforge.pmd.lang.rule.properties.DoubleProperty;
+import net.sourceforge.pmd.lang.rule.properties.StringProperty;
+
 import java.util.regex.Matcher;
-import java.util.Map;
+import java.util.regex.Pattern;
 
 public class CommentedOutCode extends AbstractJavaRule {
 
-    private static final PropertyDescriptor TRESHOLD_DESCRIPTOR = new DoubleProperty("classificationThreshold",
-        "Sensitivity of classifying the source fragment as a commented java code", 0.95, 1.0f);
+    private static final PropertyDescriptor<Double> TRESHOLD_DESCRIPTOR = new DoubleProperty("classificationThreshold",
+        "Sensitivity of classifying the source fragment as a commented java code", 0.75, 1.0, 0.85, 1.0f);
 
-    private static final PropertyDescriptor SKIP_DESCRIPTOR = new StringProperty("skipCheckSequence",
-        "When placed at the beginning of the comment, this sequence skips checking.", "##", 1.1f);
+    private static final PropertyDescriptor<String> SKIP_DESCRIPTOR = new StringProperty("skipCheckSequence",
+        "When placed at the beginning of the comment, this sequence skips checking.", "cmt", 1.1f);
 
-    private static final PropertyDescriptor JAVADOC_DESCRIPTOR = new BooleanProperty("skipJavaDocs",
+    private static final PropertyDescriptor<Boolean> JAVADOC_DESCRIPTOR = new BooleanProperty("skipJavaDocs",
         "Skip checking within JavaDocs comments", true, 1.2f);
 
     private double probability;
@@ -27,22 +27,17 @@ public class CommentedOutCode extends AbstractJavaRule {
     private boolean skipJavaDocs;
 
     public CommentedOutCode() {
-    }
-
-    private static final Map<String,PropertyDescriptor> PROPERTY_DESCRIPTORS_BY_NAME = asFixedMap(
-        new PropertyDescriptor[] { TRESHOLD_DESCRIPTOR, SKIP_DESCRIPTOR, JAVADOC_DESCRIPTOR }
-    );
-
-    protected Map<String,PropertyDescriptor> propertiesByName() {
-        return PROPERTY_DESCRIPTORS_BY_NAME;
+        this.definePropertyDescriptor(TRESHOLD_DESCRIPTOR);
+        this.definePropertyDescriptor(SKIP_DESCRIPTOR);
+        this.definePropertyDescriptor(JAVADOC_DESCRIPTOR);
     }
 
     @Override
     public Object visit(ASTCompilationUnit cUnit, Object data) {
 
-        threshold = this.getDoubleProperty(TRESHOLD_DESCRIPTOR);
-        skipSequence = this.getStringProperty(SKIP_DESCRIPTOR);
-        skipJavaDocs = this.getBooleanProperty(JAVADOC_DESCRIPTOR);
+        threshold = this.getProperty(TRESHOLD_DESCRIPTOR).doubleValue();
+        skipSequence = this.getProperty(SKIP_DESCRIPTOR);
+        skipJavaDocs = this.getProperty(JAVADOC_DESCRIPTOR).booleanValue();
         skipSequencePattern = "^[ \t]*(//|/\\*(\\*)*)[ \t]*" + skipSequence + ".*$";
 
         for (Comment comment : cUnit.getComments()) {
